@@ -1,17 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Car, 
-  CheckCircle2, 
-  ShieldCheck, 
-  ArrowRight,
-  Phone,
-  Mail,
-  User
-} from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 import { VEHICLES_DATA, SHOWROOMS_DATA } from '../data/vehiclesData';
 import { BookingService } from '../services/api';
 
@@ -20,308 +9,224 @@ export const TestDrivePage: React.FC = () => {
   const initialModel = searchParams.get('model');
   const initialLocation = searchParams.get('location');
 
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [vehicleId, setVehicleId] = useState(() => {
     const found = VEHICLES_DATA.find((v) => v.slug === initialModel || v.id === initialModel);
     return found ? found.id : VEHICLES_DATA[0].id;
   });
 
-  // Calculate min date: tomorrow
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDateString = tomorrow.toISOString().split('T')[0];
+  const minDate = tomorrow.toISOString().split('T')[0];
 
-  const [preferredDate, setPreferredDate] = useState(minDateString);
-  const [preferredTimeSlot, setPreferredTimeSlot] = useState('11:00 AM - 12:30 PM');
-  const [showroomLocation, setShowroomLocation] = useState(() => {
-    return initialLocation || SHOWROOMS_DATA[0].name;
-  });
-  const [notes, setNotes] = useState('');
+  const [date, setDate] = useState(minDate);
+  const [time, setTime] = useState('11:00 AM - 12:30 PM');
+  const [showroom, setShowroom] = useState(() => initialLocation || SHOWROOMS_DATA[0].name);
+  const [message, setMessage] = useState('');
+  const [consent, setConsent] = useState(true);
 
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [bookingId, setBookingId] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingRef, setBookingRef] = useState('');
 
   const selectedVehicle = VEHICLES_DATA.find((v) => v.id === vehicleId) || VEHICLES_DATA[0];
 
-  const timeSlots = [
-    '10:00 AM - 11:30 AM',
-    '11:30 AM - 01:00 PM',
-    '02:00 PM - 03:30 PM',
-    '03:30 PM - 05:00 PM',
-    '05:00 PM - 06:30 PM'
-  ];
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName || !customerEmail || !customerPhone || !preferredDate) return;
+    if (!name || !email || !phone || !consent) return;
 
-    setIsLoading(true);
-
+    setIsSubmitting(true);
     const booking = await BookingService.bookTestDrive({
-      customerName,
-      customerEmail,
-      customerPhone,
+      customerName: name,
+      customerEmail: email,
+      customerPhone: phone,
       vehicleId: selectedVehicle.id,
       vehicleName: selectedVehicle.name,
-      preferredDate,
-      preferredTimeSlot,
-      showroomLocation,
-      notes
+      preferredDate: date,
+      preferredTimeSlot: time,
+      showroomLocation: showroom,
+      notes: message
     });
 
-    setBookingId(booking.id);
-    setIsLoading(false);
-    setIsSubmitted(true);
+    setBookingRef(booking.id);
+    setIsSubmitting(false);
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#090a0c] text-[#f4f4f6] py-16 px-6 lg:px-12">
       <div className="max-w-4xl mx-auto">
         
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Calendar className="w-3.5 h-3.5" />
-            <span>VIP Track & Road Experience</span>
-          </div>
-          <h1 className="font-display text-3xl sm:text-5xl font-black text-white tracking-tight uppercase">
-            Book an Autobot Test Drive
+        <div className="pb-12 border-b border-white/10 mb-12">
+          <span className="font-mono text-xs uppercase tracking-meta text-[#0055ff] block mb-2">
+            // TRACK & ROAD RESERVATION
+          </span>
+          <h1 className="font-display font-black text-4xl sm:text-6xl tracking-poster uppercase text-white">
+            EXPERIENCE IT YOURSELF<span className="text-[#0055ff]">.</span>
           </h1>
-          <p className="text-zinc-400 text-sm mt-3 leading-relaxed">
-            Feel the raw instantaneous torque and dynamic road suspension in person with a certified Autobot technical specialist.
+          <p className="font-sans text-sm text-zinc-400 mt-2 max-w-xl">
+            Book an exclusive technical driving session with an authorized Autobot product specialist.
           </p>
         </div>
 
-        {isSubmitted ? (
-          <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-emerald-500/30 text-center shadow-2xl space-y-6">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8" />
+        {bookingRef ? (
+          <div className="p-10 bg-[#0f1014] hairline-border space-y-6 font-mono text-xs">
+            <div className="flex items-center gap-2 text-[#0055ff]">
+              <span className="w-2 h-2 rounded-full bg-[#0055ff]" />
+              <span className="font-bold uppercase tracking-meta">BOOKING IDENTIFIER // {bookingRef}</span>
             </div>
 
-            <div>
-              <span className="text-xs uppercase tracking-widest text-emerald-400 font-bold block mb-1">
-                Booking Reference: {bookingId}
-              </span>
-              <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white">
-                Your Test Drive Reservation Is Confirmed
-              </h2>
-              <p className="text-zinc-400 text-sm mt-2 max-w-md mx-auto">
-                Thank you, {customerName}. An Autobot concierge representative will contact you via phone within 2 hours to confirm vehicle preparation and track gate entry.
-              </p>
-            </div>
+            <h2 className="font-display font-black text-3xl text-white uppercase">
+              CONFIRMED WITH TECHNICAL DISPATCH
+            </h2>
 
-            <div className="max-w-md mx-auto p-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-left text-xs space-y-2">
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Vehicle:</span>
-                <span className="text-white font-bold">{selectedVehicle.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Date & Slot:</span>
-                <span className="text-amber-400 font-bold">{preferredDate} ({preferredTimeSlot})</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Showroom:</span>
-                <span className="text-zinc-300 font-medium truncate max-w-[220px]">{showroomLocation}</span>
-              </div>
-            </div>
+            <p className="font-sans text-sm text-zinc-300 leading-relaxed max-w-lg">
+              Thank you, {name}. Your test-drive slot for the <strong className="text-white">{selectedVehicle.name}</strong> on {date} at {showroom} has been queued. Our concierge will contact you via phone prior to arrival.
+            </p>
 
-            <div className="flex justify-center gap-4 pt-4">
+            <div className="pt-4 border-t border-white/10 flex gap-4">
               <Link
                 to="/vehicles"
-                className="px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700"
+                className="px-6 py-3 rounded-full uppercase tracking-technical font-bold bg-[#0055ff] text-white"
               >
-                Browse Other Models
-              </Link>
-              <Link
-                to={`/configurator?model=${selectedVehicle.slug}`}
-                className="px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 shadow-glow"
-              >
-                Configure This Model
+                RETURN TO CATALOGUE
               </Link>
             </div>
           </div>
         ) : (
-          <div className="glass-panel p-6 sm:p-10 rounded-3xl border border-zinc-800 shadow-2xl">
-            <form onSubmit={handleSubmit} className="space-y-8">
-              
-              {/* Step 1: Vehicle Selection */}
-              <div>
-                <h3 className="font-display text-sm font-bold uppercase tracking-wider text-amber-400 mb-4 pb-2 border-b border-zinc-800 flex items-center gap-2">
-                  <Car className="w-4 h-4" />
-                  <span>1. Select Desired Vehicle</span>
-                </h3>
+          <form onSubmit={handleSubmit} className="p-8 sm:p-12 bg-[#0f1014] hairline-border space-y-8 font-mono text-xs">
+            
+            <div className="space-y-4">
+              <span className="text-zinc-500 uppercase tracking-meta block">01 / SELECT VEHICLE MODEL</span>
+              <select
+                value={vehicleId}
+                onChange={(e) => setVehicleId(e.target.value)}
+                className="w-full px-4 py-3 bg-[#090a0c] hairline-border text-white focus:outline-none focus:border-[#0055ff]"
+              >
+                {VEHICLES_DATA.map((v) => (
+                  <option key={v.id} value={v.id}>{v.name} ({v.category} // {v.horsepower} HP)</option>
+                ))}
+              </select>
+            </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {VEHICLES_DATA.map((v) => {
-                    const isSelected = v.id === vehicleId;
-                    return (
-                      <div
-                        key={v.id}
-                        onClick={() => setVehicleId(v.id)}
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${
-                          isSelected
-                            ? 'bg-amber-400/10 border-amber-400 text-white'
-                            : 'bg-zinc-900/60 border-zinc-800/80 hover:bg-zinc-900 text-zinc-400'
-                        }`}
-                      >
-                        <img
-                          src={v.heroImage}
-                          alt={v.name}
-                          className="w-12 h-8 object-cover rounded bg-zinc-950 flex-shrink-0"
-                        />
-                        <div className="overflow-hidden">
-                          <span className="text-xs font-bold text-white block truncate">{v.name}</span>
-                          <span className="text-[10px] text-zinc-400 block truncate">{v.category}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Step 2: Showroom Location & Schedule */}
-              <div>
-                <h3 className="font-display text-sm font-bold uppercase tracking-wider text-amber-400 mb-4 pb-2 border-b border-zinc-800 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  <span>2. Schedule Date, Time & Showroom Location</span>
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Showroom Location *
-                    </label>
-                    <select
-                      value={showroomLocation}
-                      onChange={(e) => setShowroomLocation(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-400"
-                    >
-                      {SHOWROOMS_DATA.map((s) => (
-                        <option key={s.id} value={s.name}>
-                          {s.city} — {s.name.split('—')[1] || s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Date (Future Dates Only) *
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      min={minDateString}
-                      value={preferredDate}
-                      onChange={(e) => setPreferredDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Preferred Time Slot *
-                    </label>
-                    <select
-                      value={preferredTimeSlot}
-                      onChange={(e) => setPreferredTimeSlot(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-400"
-                    >
-                      {timeSlots.map((ts) => (
-                        <option key={ts} value={ts}>{ts}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Step 3: Driver Details */}
-              <div>
-                <h3 className="font-display text-sm font-bold uppercase tracking-wider text-amber-400 mb-4 pb-2 border-b border-zinc-800 flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  <span>3. Driver Profile & Contact Information</span>
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Full Legal Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Rahul Sharma"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Official Email *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="e.g. rahul@example.com"
-                      value={customerEmail}
-                      onChange={(e) => setCustomerEmail(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Contact Phone *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="+91 98765 43210"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
+            <div className="space-y-4">
+              <span className="text-zinc-500 uppercase tracking-meta block">02 / DATE, TIME & LOCATION</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[10px] text-zinc-500 uppercase block mb-1">SHOWROOM *</label>
+                  <select
+                    value={showroom}
+                    onChange={(e) => setShowroom(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[#090a0c] hairline-border text-white focus:outline-none focus:border-[#0055ff]"
+                  >
+                    {SHOWROOMS_DATA.map((s) => (
+                      <option key={s.id} value={s.name}>{s.city} — {s.name.split('—')[1] || s.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                    Special Requests or Highway Route Preference (Optional)
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="e.g. Interested in testing Highway Co-Pilot ADAS and high-speed braking..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                  <label className="text-[10px] text-zinc-500 uppercase block mb-1">DATE *</label>
+                  <input
+                    type="date"
+                    required
+                    min={minDate}
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#090a0c] hairline-border text-white focus:outline-none focus:border-[#0055ff]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-zinc-500 uppercase block mb-1">TIME SLOT *</label>
+                  <select
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[#090a0c] hairline-border text-white focus:outline-none focus:border-[#0055ff]"
+                  >
+                    <option value="10:00 AM - 11:30 AM">10:00 AM - 11:30 AM</option>
+                    <option value="11:30 AM - 01:00 PM">11:30 AM - 01:00 PM</option>
+                    <option value="02:00 PM - 03:30 PM">02:00 PM - 03:30 PM</option>
+                    <option value="04:00 PM - 05:30 PM">04:00 PM - 05:30 PM</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <span className="text-zinc-500 uppercase tracking-meta block">03 / DRIVER CREDENTIALS</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[10px] text-zinc-500 uppercase block mb-1">NAME *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="FULL NAME"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[#090a0c] hairline-border text-white placeholder-zinc-600 focus:outline-none focus:border-[#0055ff]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-zinc-500 uppercase block mb-1">EMAIL *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="EMAIL ADDRESS"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[#090a0c] hairline-border text-white placeholder-zinc-600 focus:outline-none focus:border-[#0055ff]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-zinc-500 uppercase block mb-1">PHONE *</label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="MOBILE PHONE"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[#090a0c] hairline-border text-white placeholder-zinc-600 focus:outline-none focus:border-[#0055ff]"
                   />
                 </div>
               </div>
 
-              {/* Requirement Notes */}
-              <div className="flex items-start gap-3 bg-zinc-900/60 p-4 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                <ShieldCheck className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                <p>
-                  <strong>Test Drive Prerequisites:</strong> Drivers must hold a valid, unrestricted motor vehicle driver's license for a minimum of 2 years and present it upon arrival at the showroom.
-                </p>
+              <div>
+                <label className="text-[10px] text-zinc-500 uppercase block mb-1">MESSAGE / REQUEST (OPTIONAL)</label>
+                <textarea
+                  rows={3}
+                  placeholder="SPECIAL HIGHWAY ROUTE REQUEST OR TECHNICAL FOCUS..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#090a0c] hairline-border text-white placeholder-zinc-600 focus:outline-none focus:border-[#0055ff]"
+                />
               </div>
+            </div>
 
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 text-black font-extrabold text-xs uppercase tracking-widest shadow-glow hover:opacity-95 transition-opacity"
-              >
-                {isLoading ? 'Processing Reservation...' : 'Confirm Priority Test Drive'}
-              </button>
+            <div className="flex items-start gap-3 pt-2">
+              <input
+                type="checkbox"
+                id="consent"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                className="mt-0.5 accent-[#0055ff]"
+              />
+              <label htmlFor="consent" className="text-zinc-400 leading-relaxed cursor-pointer">
+                I hold a valid driver's license and consent to receive booking communications from Autobot.
+              </label>
+            </div>
 
-            </form>
-          </div>
+            <button
+              type="submit"
+              disabled={isSubmitting || !consent}
+              className="w-full py-4 rounded-full font-mono text-xs uppercase tracking-technical font-bold bg-[#0055ff] text-white hover:bg-[#0047d6] transition-colors"
+            >
+              {isSubmitting ? 'DISPATCHING...' : 'BOOK TEST DRIVE'}
+            </button>
+          </form>
         )}
 
       </div>

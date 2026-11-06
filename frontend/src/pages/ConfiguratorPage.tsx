@@ -1,21 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import confetti from 'canvas-confetti';
+import { useSearchParams, Link } from 'react-router-dom';
 import { 
-  Sliders, 
   Check, 
   ChevronRight, 
   ArrowLeft, 
   FileText, 
   Download, 
-  Sparkles, 
-  Car, 
-  ShieldCheck, 
-  HelpCircle, 
-  Calendar, 
+  Mail, 
   Share2, 
-  Copy,
-  Printer
+  SlidersHorizontal 
 } from 'lucide-react';
 import { VEHICLES_DATA } from '../data/vehiclesData';
 import { 
@@ -24,8 +17,6 @@ import {
   VehicleVariant, 
   VehicleInterior, 
   VehicleWheel, 
-  VehiclePackage, 
-  VehicleAccessory, 
   Quotation, 
   UserConfiguration 
 } from '../types/vehicle';
@@ -34,21 +25,18 @@ import { InteractiveVehicleViewer } from '../components/ui/InteractiveVehicleVie
 
 export const ConfiguratorPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-
   const modelParam = searchParams.get('model');
   const variantParam = searchParams.get('variant');
 
-  // Find vehicle or default to Autobot Aero X
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle>(() => {
     const found = VEHICLES_DATA.find((v) => v.slug === modelParam || v.id === modelParam);
     return found || VEHICLES_DATA[0];
   });
 
-  // Steps: 'vehicle' | 'color' | 'variant' | 'interior' | 'wheels' | 'packages' | 'accessories' | 'summary' | 'quote'
+  // Steps: 1 to 8
   const [currentStep, setCurrentStep] = useState<number>(1);
 
-  // Configuration selections
+  // Selections
   const [selectedColor, setSelectedColor] = useState<VehicleColor>(selectedVehicle.colors[0]);
   const [selectedVariant, setSelectedVariant] = useState<VehicleVariant>(() => {
     if (variantParam) {
@@ -69,9 +57,8 @@ export const ConfiguratorPage: React.FC = () => {
   const [customerCity, setCustomerCity] = useState('Mumbai');
   const [issuedQuotation, setIssuedQuotation] = useState<Quotation | null>(null);
   const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
-  // Update configuration when vehicle changes
   useEffect(() => {
     setSelectedColor(selectedVehicle.colors[0]);
     setSelectedVariant(selectedVehicle.variants[0]);
@@ -81,7 +68,7 @@ export const ConfiguratorPage: React.FC = () => {
     setSelectedAccessoryIds([]);
   }, [selectedVehicle]);
 
-  // Pricing Calculation
+  // Price calculations
   const pricing = useMemo(() => {
     return ConfiguratorService.calculateQuotationPrice(
       selectedVehicle,
@@ -95,13 +82,13 @@ export const ConfiguratorPage: React.FC = () => {
   }, [selectedVehicle, selectedVariant, selectedColor, selectedInterior, selectedWheel, selectedPackageIds, selectedAccessoryIds]);
 
   const togglePackage = (pkgId: string) => {
-    setSelectedPackageIds((prev) => 
+    setSelectedPackageIds((prev) =>
       prev.includes(pkgId) ? prev.filter((id) => id !== pkgId) : [...prev, pkgId]
     );
   };
 
   const toggleAccessory = (accId: string) => {
-    setSelectedAccessoryIds((prev) => 
+    setSelectedAccessoryIds((prev) =>
       prev.includes(accId) ? prev.filter((id) => id !== accId) : [...prev, accId]
     );
   };
@@ -132,478 +119,351 @@ export const ConfiguratorPage: React.FC = () => {
     const quote = await ConfiguratorService.createQuotation(userConfig, selectedVehicle);
     setIssuedQuotation(quote);
     setIsSubmittingQuote(false);
-    setCurrentStep(8); // Quote confirmation screen
-
-    // Trigger celebratory confetti
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
+    setCurrentStep(8);
   };
 
-  const handlePrintOrPdf = () => {
+  const handleDownloadPdf = () => {
     window.print();
   };
 
-  const handleCopyConfig = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
-  };
-
   const stepsList = [
-    'Model',
-    'Exterior Paint',
-    'Trim Variant',
-    'Interior Atelier',
-    'Wheels',
-    'Packages',
-    'Accessories',
-    'Summary & Quote'
+    'MODEL',
+    'VARIANT',
+    'EXTERIOR',
+    'INTERIOR',
+    'WHEELS',
+    'PACKAGES',
+    'ACCESSORIES',
+    'SUMMARY'
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 pb-24">
+    <div className="min-h-screen bg-[#090a0c] text-[#f4f4f6] pb-24">
       
-      {/* Top Header & Wizard Navigation */}
-      <div className="bg-zinc-950/90 border-b border-zinc-800/80 sticky top-[72px] z-30 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between gap-4 overflow-x-auto no-scrollbar">
-            
-            <div className="flex items-center gap-2">
-              <span className="font-display font-extrabold text-white text-sm">
-                Configurator
-              </span>
-              <span className="text-zinc-600">/</span>
-              <span className="text-amber-400 font-bold text-xs truncate max-w-[140px] sm:max-w-none">
-                {selectedVehicle.name}
-              </span>
-            </div>
-
-            {/* Stepper Pills */}
-            <div className="flex items-center space-x-1 sm:space-x-2">
-              {stepsList.map((stepName, idx) => {
-                const stepNum = idx + 1;
-                const isCurrent = currentStep === stepNum;
-                const isPassed = currentStep > stepNum;
-
-                return (
-                  <button
-                    key={stepName}
-                    onClick={() => setCurrentStep(stepNum)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-                      isCurrent
-                        ? 'bg-amber-400 text-black shadow-glow'
-                        : isPassed
-                        ? 'bg-zinc-800 text-zinc-300 hover:text-white'
-                        : 'text-zinc-600 hover:text-zinc-400'
-                    }`}
-                  >
-                    {stepNum}. {stepName}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Live Price Tag */}
-            <div className="hidden md:flex flex-col text-right">
-              <span className="text-[10px] uppercase tracking-wider text-zinc-400">Estimated Total</span>
-              <span className="font-display text-sm font-extrabold text-amber-400">
-                {CurrencyFormatter.formatINR(pricing.estimatedTotal)}
-              </span>
-            </div>
-
+      {/* Top Technical Stepper Bar (64px) */}
+      <div className="bg-[#090a0c] hairline-border-b sticky top-16 z-30">
+        <div className="max-w-[1520px] mx-auto px-6 lg:px-12 py-3 flex items-center justify-between overflow-x-auto no-scrollbar gap-6">
+          
+          <div className="flex items-center gap-2 font-mono text-xs">
+            <span className="text-[#0055ff] font-bold">ATELIER //</span>
+            <span className="text-white font-bold">{selectedVehicle.name}</span>
           </div>
+
+          {/* Steps List */}
+          <div className="flex items-center space-x-4 sm:space-x-6 font-mono text-xs">
+            {stepsList.map((stepName, idx) => {
+              const stepNum = idx + 1;
+              const isCurrent = currentStep === stepNum;
+              const isPassed = currentStep > stepNum;
+
+              return (
+                <button
+                  key={stepName}
+                  onClick={() => setCurrentStep(stepNum)}
+                  className={`whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+                    isCurrent
+                      ? 'text-[#0055ff] font-bold border-b-2 border-[#0055ff] pb-0.5'
+                      : isPassed
+                      ? 'text-zinc-300 hover:text-white'
+                      : 'text-zinc-600 hover:text-zinc-400'
+                  }`}
+                >
+                  <span>0{stepNum} — {stepName}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick Price Indicator */}
+          <div className="hidden md:flex items-baseline gap-2 font-mono text-xs">
+            <span className="text-zinc-500">EST. TOTAL:</span>
+            <span className="text-[#0055ff] font-bold">
+              {CurrencyFormatter.formatINR(pricing.estimatedTotal)}
+            </span>
+          </div>
+
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="max-w-[1520px] mx-auto px-6 lg:px-12 pt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           
-          {/* Left Column: Visualizer Stage & Live 3D Experience (7 cols) */}
-          <div className="lg:col-span-7 sticky top-36">
+          {/* Left: Large Vehicle Visual (7 cols) */}
+          <div className="lg:col-span-7 sticky top-32 space-y-4">
             <InteractiveVehicleViewer
               vehicle={selectedVehicle}
               selectedColor={selectedColor}
               onColorChange={(c) => setSelectedColor(c)}
             />
 
-            {/* Quick Specs Bar Below Visualizer */}
-            <div className="grid grid-cols-4 gap-2 mt-4 p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center text-xs">
+            {/* Technical Spec Matrix Under Visualizer */}
+            <div className="grid grid-cols-4 py-3 px-6 bg-[#0f1014] hairline-border font-mono text-xs text-center">
               <div>
-                <span className="text-[10px] uppercase text-zinc-400 block">Drivetrain</span>
-                <span className="font-bold text-white truncate block">{selectedVariant.badge}</span>
+                <span className="text-zinc-500 uppercase tracking-meta text-[10px] block">DRIVE</span>
+                <span className="text-white font-bold">{selectedVariant.badge}</span>
+              </div>
+              <div className="border-x border-white/5">
+                <span className="text-zinc-500 uppercase tracking-meta text-[10px] block">0-100</span>
+                <span className="text-white font-bold">{selectedVariant.acceleration}</span>
+              </div>
+              <div className="border-r border-white/5">
+                <span className="text-zinc-500 uppercase tracking-meta text-[10px] block">OUTPUT</span>
+                <span className="text-[#0055ff] font-bold">{selectedVariant.power}</span>
               </div>
               <div>
-                <span className="text-[10px] uppercase text-zinc-400 block">0-100 km/h</span>
-                <span className="font-bold text-white">{selectedVariant.acceleration}</span>
+                <span className="text-zinc-500 uppercase tracking-meta text-[10px] block">RANGE</span>
+                <span className="text-white font-bold">{selectedVariant.rangeOrMileage}</span>
               </div>
-              <div>
-                <span className="text-[10px] uppercase text-zinc-400 block">System Power</span>
-                <span className="font-bold text-amber-400">{selectedVariant.power}</span>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase text-zinc-400 block">Range / Fuel</span>
-                <span className="font-bold text-white truncate block">{selectedVariant.rangeOrMileage}</span>
-              </div>
-            </div>
-
-            {/* Actions: Share & Brochure */}
-            <div className="flex items-center justify-between mt-4 px-2 text-xs">
-              <button
-                onClick={handleCopyConfig}
-                className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>{copiedLink ? 'Configuration Link Copied!' : 'Share Build'}</span>
-              </button>
-
-              <Link
-                to={`/vehicles/${selectedVehicle.slug}`}
-                className="text-amber-400 hover:underline flex items-center gap-1"
-              >
-                <span>View Full Model Specifications →</span>
-              </Link>
             </div>
           </div>
 
-          {/* Right Column: Interactive Configuration Steps (5 cols) */}
-          <div className="lg:col-span-5 space-y-6">
+          {/* Right: Technical Options Column (5 cols) */}
+          <div className="lg:col-span-5 bg-[#0f1014] p-8 hairline-border space-y-8">
             
-            {/* Step 1: Select Model */}
+            {/* 01 — MODEL */}
             {currentStep === 1 && (
-              <div className="glass-panel p-6 rounded-3xl border border-zinc-800 space-y-4">
-                <div className="flex justify-between items-center pb-3 border-b border-zinc-800">
-                  <h3 className="font-display text-lg font-bold text-white">Select Vehicle Model</h3>
-                  <span className="text-xs text-amber-400 font-bold">{VEHICLES_DATA.length} Models</span>
+              <div className="space-y-6">
+                <div className="pb-4 border-b border-white/10 flex justify-between items-baseline font-mono">
+                  <span className="text-xs uppercase tracking-meta text-[#0055ff]">01 / SELECT MODEL</span>
+                  <span className="text-xs text-zinc-500">{VEHICLES_DATA.length} AVAILABLE</span>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 max-h-[520px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
                   {VEHICLES_DATA.map((v) => {
                     const isSelected = v.id === selectedVehicle.id;
                     return (
-                      <button
+                      <div
                         key={v.id}
                         onClick={() => setSelectedVehicle(v)}
-                        className={`p-3.5 rounded-2xl border text-left flex items-center justify-between transition-all ${
-                          isSelected
-                            ? 'bg-amber-400/10 border-amber-400 text-white'
-                            : 'bg-zinc-900/60 border-zinc-800/80 hover:bg-zinc-900 text-zinc-300'
+                        className={`p-4 hairline-border cursor-pointer transition-colors flex items-center justify-between ${
+                          isSelected ? 'bg-white/5 border-[#0055ff]' : 'hover:bg-white/[0.02]'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={v.heroImage}
-                            alt={v.name}
-                            className="w-16 h-10 object-cover rounded-lg bg-zinc-950"
-                          />
-                          <div>
-                            <span className="text-sm font-bold block">{v.name}</span>
-                            <span className="text-[11px] text-zinc-400">{v.category} • {v.fuelType}</span>
-                          </div>
+                        <div>
+                          <span className="font-display font-bold text-base text-white block">{v.name}</span>
+                          <span className="font-mono text-[11px] text-zinc-500 uppercase">{v.category} • {v.fuelType}</span>
                         </div>
-
-                        <div className="text-right">
-                          <span className="text-xs font-extrabold text-amber-400 block">
-                            {CurrencyFormatter.formatINR(v.startingPrice)}
-                          </span>
-                          {isSelected && <Check className="w-4 h-4 text-amber-400 ml-auto mt-1" />}
+                        <div className="text-right font-mono text-xs">
+                          <span className="text-[#0055ff] font-bold block">{CurrencyFormatter.formatINR(v.startingPrice)}</span>
+                          {isSelected && <span className="text-white text-[10px]">[SELECTED]</span>}
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
 
                 <button
                   onClick={() => setCurrentStep(2)}
-                  className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs uppercase tracking-wider transition-colors shadow-glow flex items-center justify-center gap-1.5"
+                  className="w-full py-4 rounded-full font-mono text-xs uppercase tracking-technical font-bold bg-[#0055ff] text-white hover:bg-[#0047d6] transition-colors"
                 >
-                  <span>Proceed to Exterior Paint</span>
-                  <ChevronRight className="w-4 h-4" />
+                  NEXT: 02 — VARIANT &rarr;
                 </button>
               </div>
             )}
 
-            {/* Step 2: Exterior Paint Colors */}
+            {/* 02 — VARIANT */}
             {currentStep === 2 && (
-              <div className="glass-panel p-6 rounded-3xl border border-zinc-800 space-y-5">
-                <div className="flex justify-between items-center pb-3 border-b border-zinc-800">
-                  <div>
-                    <h3 className="font-display text-lg font-bold text-white">Exterior Paint Finish</h3>
-                    <p className="text-xs text-zinc-400">Multiple multi-coat and matte finishes</p>
-                  </div>
-                  <span className="text-xs font-bold text-amber-400">
-                    {selectedColor.price === 0 ? 'Included' : `+${CurrencyFormatter.formatINR(selectedColor.price)}`}
-                  </span>
+              <div className="space-y-6">
+                <div className="pb-4 border-b border-white/10 font-mono text-xs uppercase tracking-meta text-[#0055ff]">
+                  02 / TRIM VARIANT SELECTION
                 </div>
 
                 <div className="space-y-3">
-                  {selectedVehicle.colors.map((color) => {
-                    const isSelected = selectedColor.id === color.id;
-                    return (
-                      <button
-                        key={color.id}
-                        onClick={() => setSelectedColor(color)}
-                        className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between transition-all ${
-                          isSelected
-                            ? 'bg-amber-400/10 border-amber-400'
-                            : 'bg-zinc-900/60 border-zinc-800 hover:bg-zinc-900'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3.5">
-                          <div
-                            className="w-8 h-8 rounded-full border border-white/20 shadow-inner flex-shrink-0"
-                            style={{ backgroundColor: color.hex }}
-                          />
-                          <div>
-                            <span className="text-sm font-bold text-white block">{color.name}</span>
-                            <span className="text-[11px] uppercase tracking-wider text-zinc-400">
-                              {color.exteriorFinish || 'Metallic'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="text-xs font-bold text-zinc-300">
-                            {color.price === 0 ? 'Standard' : `+${CurrencyFormatter.formatINR(color.price)}`}
-                          </span>
-                          {isSelected && <Check className="w-4 h-4 text-amber-400 ml-auto mt-1" />}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex items-center gap-3 pt-2">
-                  <button
-                    onClick={() => setCurrentStep(1)}
-                    className="py-3 px-4 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-wider"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={() => setCurrentStep(3)}
-                    className="flex-1 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs uppercase tracking-wider shadow-glow flex items-center justify-center gap-1"
-                  >
-                    <span>Proceed to Trim Variant</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Trim Variant */}
-            {currentStep === 3 && (
-              <div className="glass-panel p-6 rounded-3xl border border-zinc-800 space-y-5">
-                <div className="flex justify-between items-center pb-3 border-b border-zinc-800">
-                  <div>
-                    <h3 className="font-display text-lg font-bold text-white">Select Trim Variant</h3>
-                    <p className="text-xs text-zinc-400">Powertrain and mechanical tuning</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
                   {selectedVehicle.variants.map((v) => {
                     const isSelected = selectedVariant.id === v.id;
                     return (
-                      <button
+                      <div
                         key={v.id}
                         onClick={() => setSelectedVariant(v)}
-                        className={`w-full p-5 rounded-2xl border text-left transition-all ${
-                          isSelected
-                            ? 'bg-amber-400/10 border-amber-400'
-                            : 'bg-zinc-900/60 border-zinc-800 hover:bg-zinc-900'
+                        className={`p-5 hairline-border cursor-pointer transition-colors ${
+                          isSelected ? 'bg-white/5 border-[#0055ff]' : 'hover:bg-white/[0.02]'
                         }`}
                       >
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-amber-400 mr-2">
-                              {v.badge}
-                            </span>
-                            <span className="font-display text-base font-bold text-white">{v.name}</span>
-                          </div>
-                          <span className="text-xs font-bold text-amber-400">
-                            {v.priceDelta === 0 ? 'Base Trim' : `+${CurrencyFormatter.formatINR(v.priceDelta)}`}
+                        <div className="flex justify-between items-baseline mb-2 font-mono">
+                          <span className="font-display font-bold text-lg text-white">{v.name}</span>
+                          <span className="text-xs text-[#0055ff] font-bold">
+                            {v.priceDelta === 0 ? 'BASE TRIM' : `+${CurrencyFormatter.formatINR(v.priceDelta)}`}
                           </span>
                         </div>
-
-                        <p className="text-xs text-zinc-400 mb-3">{v.drivetrain}</p>
-
-                        <div className="grid grid-cols-3 gap-2 py-2 px-3 bg-zinc-950 rounded-lg text-center text-xs mb-3">
-                          <div>
-                            <span className="text-[10px] text-zinc-400 block">0-100</span>
-                            <span className="font-semibold text-white">{v.acceleration}</span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-zinc-400 block">Top Speed</span>
-                            <span className="font-semibold text-white">{v.topSpeed}</span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-zinc-400 block">Power</span>
-                            <span className="font-semibold text-white">{v.power}</span>
-                          </div>
+                        <p className="font-mono text-xs text-zinc-400 mb-3">{v.drivetrain} // {v.power} // {v.acceleration}</p>
+                        <div className="flex items-center gap-2 font-mono text-[10px] text-zinc-500 uppercase">
+                          <span>FEATURES:</span>
+                          <span className="text-zinc-300">{v.features.join(' • ')}</span>
                         </div>
-
-                        <ul className="space-y-1">
-                          {v.features.slice(0, 2).map((feat, fIdx) => (
-                            <li key={fIdx} className="text-[11px] text-zinc-400 flex items-center gap-1.5">
-                              <Check className="w-3 h-3 text-amber-400" />
-                              <span>{feat}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
 
-                <div className="flex items-center gap-3 pt-2">
+                <div className="flex gap-3">
                   <button
-                    onClick={() => setCurrentStep(2)}
-                    className="py-3 px-4 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-wider"
+                    onClick={() => setCurrentStep(1)}
+                    className="py-3 px-6 rounded-full font-mono text-xs uppercase tracking-technical text-zinc-400 hairline-border hover:text-white"
                   >
-                    Back
+                    BACK
                   </button>
                   <button
-                    onClick={() => setCurrentStep(4)}
-                    className="flex-1 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs uppercase tracking-wider shadow-glow flex items-center justify-center gap-1"
+                    onClick={() => setCurrentStep(3)}
+                    className="flex-1 py-3 rounded-full font-mono text-xs uppercase tracking-technical font-bold bg-[#0055ff] text-white hover:bg-[#0047d6]"
                   >
-                    <span>Proceed to Interior Atelier</span>
-                    <ChevronRight className="w-4 h-4" />
+                    NEXT: 03 — EXTERIOR &rarr;
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Step 4: Interior Atelier */}
-            {currentStep === 4 && (
-              <div className="glass-panel p-6 rounded-3xl border border-zinc-800 space-y-5">
-                <div className="flex justify-between items-center pb-3 border-b border-zinc-800">
-                  <div>
-                    <h3 className="font-display text-lg font-bold text-white">Interior Atelier</h3>
-                    <p className="text-xs text-zinc-400">Hand-selected leathers and sustainable textiles</p>
-                  </div>
+            {/* 03 — EXTERIOR PAINT */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <div className="pb-4 border-b border-white/10 font-mono text-xs uppercase tracking-meta text-[#0055ff]">
+                  03 / EXTERIOR FINISH
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
+                  {selectedVehicle.colors.map((color) => {
+                    const isSelected = selectedColor.id === color.id;
+                    return (
+                      <div
+                        key={color.id}
+                        onClick={() => setSelectedColor(color)}
+                        className={`p-4 hairline-border cursor-pointer flex items-center justify-between transition-colors ${
+                          isSelected ? 'bg-white/5 border-[#0055ff]' : 'hover:bg-white/[0.02]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 font-mono">
+                          <div className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: color.hex }} />
+                          <div>
+                            <span className="text-xs font-bold text-white block">{color.name}</span>
+                            <span className="text-[10px] text-zinc-500 uppercase">{color.exteriorFinish || 'METALLIC'}</span>
+                          </div>
+                        </div>
+                        <span className="font-mono text-xs text-zinc-400">
+                          {color.price === 0 ? 'INCLUDED' : `+${CurrencyFormatter.formatINR(color.price)}`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setCurrentStep(2)}
+                    className="py-3 px-6 rounded-full font-mono text-xs uppercase tracking-technical text-zinc-400 hairline-border hover:text-white"
+                  >
+                    BACK
+                  </button>
+                  <button
+                    onClick={() => setCurrentStep(4)}
+                    className="flex-1 py-3 rounded-full font-mono text-xs uppercase tracking-technical font-bold bg-[#0055ff] text-white hover:bg-[#0047d6]"
+                  >
+                    NEXT: 04 — INTERIOR &rarr;
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 04 — INTERIOR */}
+            {currentStep === 4 && (
+              <div className="space-y-6">
+                <div className="pb-4 border-b border-white/10 font-mono text-xs uppercase tracking-meta text-[#0055ff]">
+                  04 / INTERIOR ATELIER
+                </div>
+
+                <div className="space-y-2">
                   {selectedVehicle.interiorOptions.map((item) => {
                     const isSelected = selectedInterior.id === item.id;
                     return (
-                      <button
+                      <div
                         key={item.id}
                         onClick={() => setSelectedInterior(item)}
-                        className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between transition-all ${
-                          isSelected
-                            ? 'bg-amber-400/10 border-amber-400'
-                            : 'bg-zinc-900/60 border-zinc-800 hover:bg-zinc-900'
+                        className={`p-4 hairline-border cursor-pointer flex items-center justify-between transition-colors ${
+                          isSelected ? 'bg-white/5 border-[#0055ff]' : 'hover:bg-white/[0.02]'
                         }`}
                       >
-                        <div className="flex items-center gap-3.5">
-                          <div
-                            className="w-8 h-8 rounded-full border border-white/20 shadow-inner flex-shrink-0"
-                            style={{ backgroundColor: item.hex }}
-                          />
+                        <div className="flex items-center gap-3 font-mono">
+                          <div className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: item.hex }} />
                           <div>
-                            <span className="text-sm font-bold text-white block">{item.name}</span>
-                            <span className="text-[11px] text-zinc-400">{item.material}</span>
+                            <span className="text-xs font-bold text-white block">{item.name}</span>
+                            <span className="text-[10px] text-zinc-500 uppercase">{item.material}</span>
                           </div>
                         </div>
-
-                        <div className="text-right">
-                          <span className="text-xs font-bold text-zinc-300">
-                            {item.price === 0 ? 'Standard' : `+${CurrencyFormatter.formatINR(item.price)}`}
-                          </span>
-                          {isSelected && <Check className="w-4 h-4 text-amber-400 ml-auto mt-1" />}
-                        </div>
-                      </button>
+                        <span className="font-mono text-xs text-zinc-400">
+                          {item.price === 0 ? 'STANDARD' : `+${CurrencyFormatter.formatINR(item.price)}`}
+                        </span>
+                      </div>
                     );
                   })}
                 </div>
 
-                <div className="flex items-center gap-3 pt-2">
+                <div className="flex gap-3">
                   <button
                     onClick={() => setCurrentStep(3)}
-                    className="py-3 px-4 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-wider"
+                    className="py-3 px-6 rounded-full font-mono text-xs uppercase tracking-technical text-zinc-400 hairline-border hover:text-white"
                   >
-                    Back
+                    BACK
                   </button>
                   <button
                     onClick={() => setCurrentStep(5)}
-                    className="flex-1 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs uppercase tracking-wider shadow-glow flex items-center justify-center gap-1"
+                    className="flex-1 py-3 rounded-full font-mono text-xs uppercase tracking-technical font-bold bg-[#0055ff] text-white hover:bg-[#0047d6]"
                   >
-                    <span>Proceed to Wheels</span>
-                    <ChevronRight className="w-4 h-4" />
+                    NEXT: 05 — WHEELS &rarr;
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Step 5: Wheels */}
+            {/* 05 — WHEELS */}
             {currentStep === 5 && (
-              <div className="glass-panel p-6 rounded-3xl border border-zinc-800 space-y-5">
-                <div className="flex justify-between items-center pb-3 border-b border-zinc-800">
-                  <div>
-                    <h3 className="font-display text-lg font-bold text-white">Wheels & Alloys</h3>
-                    <p className="text-xs text-zinc-400">Forged monoblock and aerodynamic rims</p>
-                  </div>
+              <div className="space-y-6">
+                <div className="pb-4 border-b border-white/10 font-mono text-xs uppercase tracking-meta text-[#0055ff]">
+                  05 / WHEELS & FORGED ALLOYS
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {selectedVehicle.wheels.map((wheel) => {
                     const isSelected = selectedWheel.id === wheel.id;
                     return (
-                      <button
+                      <div
                         key={wheel.id}
                         onClick={() => setSelectedWheel(wheel)}
-                        className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between transition-all ${
-                          isSelected
-                            ? 'bg-amber-400/10 border-amber-400'
-                            : 'bg-zinc-900/60 border-zinc-800 hover:bg-zinc-900'
+                        className={`p-4 hairline-border cursor-pointer flex items-center justify-between transition-colors ${
+                          isSelected ? 'bg-white/5 border-[#0055ff]' : 'hover:bg-white/[0.02]'
                         }`}
                       >
-                        <div>
-                          <span className="text-sm font-bold text-white block">{wheel.name}</span>
-                          <span className="text-[11px] text-zinc-400">{wheel.sizeInch}" • {wheel.finish}</span>
+                        <div className="font-mono">
+                          <span className="text-xs font-bold text-white block">{wheel.name}</span>
+                          <span className="text-[10px] text-zinc-500 uppercase">{wheel.sizeInch}" // {wheel.finish}</span>
                         </div>
-
-                        <div className="text-right">
-                          <span className="text-xs font-bold text-zinc-300">
-                            {wheel.price === 0 ? 'Standard' : `+${CurrencyFormatter.formatINR(wheel.price)}`}
-                          </span>
-                          {isSelected && <Check className="w-4 h-4 text-amber-400 ml-auto mt-1" />}
-                        </div>
-                      </button>
+                        <span className="font-mono text-xs text-zinc-400">
+                          {wheel.price === 0 ? 'STANDARD' : `+${CurrencyFormatter.formatINR(wheel.price)}`}
+                        </span>
+                      </div>
                     );
                   })}
                 </div>
 
-                <div className="flex items-center gap-3 pt-2">
+                <div className="flex gap-3">
                   <button
                     onClick={() => setCurrentStep(4)}
-                    className="py-3 px-4 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-wider"
+                    className="py-3 px-6 rounded-full font-mono text-xs uppercase tracking-technical text-zinc-400 hairline-border hover:text-white"
                   >
-                    Back
+                    BACK
                   </button>
                   <button
                     onClick={() => setCurrentStep(6)}
-                    className="flex-1 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs uppercase tracking-wider shadow-glow flex items-center justify-center gap-1"
+                    className="flex-1 py-3 rounded-full font-mono text-xs uppercase tracking-technical font-bold bg-[#0055ff] text-white hover:bg-[#0047d6]"
                   >
-                    <span>Proceed to Optional Packages</span>
-                    <ChevronRight className="w-4 h-4" />
+                    NEXT: 06 — PACKAGES &rarr;
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Step 6: Optional Packages */}
+            {/* 06 — PACKAGES */}
             {currentStep === 6 && (
-              <div className="glass-panel p-6 rounded-3xl border border-zinc-800 space-y-5">
-                <div className="flex justify-between items-center pb-3 border-b border-zinc-800">
-                  <div>
-                    <h3 className="font-display text-lg font-bold text-white">Technological Packages</h3>
-                    <p className="text-xs text-zinc-400">Curated factory hardware & software suites</p>
-                  </div>
+              <div className="space-y-6">
+                <div className="pb-4 border-b border-white/10 font-mono text-xs uppercase tracking-meta text-[#0055ff]">
+                  06 / FACTORY TECHNOLOGY PACKAGES
                 </div>
 
                 <div className="space-y-3">
@@ -613,306 +473,218 @@ export const ConfiguratorPage: React.FC = () => {
                       <div
                         key={pkg.id}
                         onClick={() => togglePackage(pkg.id)}
-                        className={`w-full p-4 rounded-2xl border text-left cursor-pointer transition-all ${
-                          isSelected
-                            ? 'bg-amber-400/10 border-amber-400'
-                            : 'bg-zinc-900/60 border-zinc-800 hover:bg-zinc-900'
+                        className={`p-4 hairline-border cursor-pointer transition-colors ${
+                          isSelected ? 'bg-white/5 border-[#0055ff]' : 'hover:bg-white/[0.02]'
                         }`}
                       >
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="text-sm font-bold text-white">{pkg.name}</span>
-                          <span className="text-xs font-extrabold text-amber-400">
-                            +{CurrencyFormatter.formatINR(pkg.price)}
-                          </span>
+                        <div className="flex justify-between items-baseline mb-1 font-mono">
+                          <span className="text-xs font-bold text-white">{pkg.name}</span>
+                          <span className="text-xs text-[#0055ff] font-bold">+{CurrencyFormatter.formatINR(pkg.price)}</span>
                         </div>
-                        <p className="text-xs text-zinc-400 mb-3">{pkg.description}</p>
-                        
-                        <div className="flex flex-wrap gap-1.5">
-                          {pkg.highlightFeatures.map((h, i) => (
-                            <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-zinc-950 text-zinc-300 border border-zinc-800">
-                              {h}
-                            </span>
-                          ))}
-                        </div>
+                        <p className="font-mono text-[11px] text-zinc-400">{pkg.description}</p>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="flex items-center gap-3 pt-2">
+                <div className="flex gap-3">
                   <button
                     onClick={() => setCurrentStep(5)}
-                    className="py-3 px-4 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-wider"
+                    className="py-3 px-6 rounded-full font-mono text-xs uppercase tracking-technical text-zinc-400 hairline-border hover:text-white"
                   >
-                    Back
+                    BACK
                   </button>
                   <button
                     onClick={() => setCurrentStep(7)}
-                    className="flex-1 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs uppercase tracking-wider shadow-glow flex items-center justify-center gap-1"
+                    className="flex-1 py-3 rounded-full font-mono text-xs uppercase tracking-technical font-bold bg-[#0055ff] text-white hover:bg-[#0047d6]"
                   >
-                    <span>Proceed to Accessories</span>
-                    <ChevronRight className="w-4 h-4" />
+                    NEXT: 07 — ACCESSORIES &rarr;
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Step 7: Accessories & Summary */}
+            {/* 07 — ACCESSORIES & TECHNICAL PRICE PANEL */}
             {currentStep === 7 && (
-              <div className="glass-panel p-6 rounded-3xl border border-zinc-800 space-y-6">
-                <div>
-                  <h3 className="font-display text-lg font-bold text-white">Bespoke Accessories</h3>
-                  <p className="text-xs text-zinc-400">Chargers, lifestyle travel items, and protection</p>
+              <div className="space-y-6">
+                <div className="pb-4 border-b border-white/10 font-mono text-xs uppercase tracking-meta text-[#0055ff]">
+                  07 / ACCESSORIES & LIVE PRICE CALCULATION
                 </div>
 
-                <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
                   {selectedVehicle.accessories.map((acc) => {
                     const isSelected = selectedAccessoryIds.includes(acc.id);
                     return (
                       <div
                         key={acc.id}
                         onClick={() => toggleAccessory(acc.id)}
-                        className={`p-3 rounded-xl border text-left cursor-pointer flex items-center justify-between transition-all ${
-                          isSelected
-                            ? 'bg-amber-400/10 border-amber-400'
-                            : 'bg-zinc-900/60 border-zinc-800 hover:bg-zinc-900'
+                        className={`p-3 hairline-border cursor-pointer flex items-center justify-between text-xs font-mono ${
+                          isSelected ? 'bg-white/5 border-[#0055ff]' : 'hover:bg-white/[0.02]'
                         }`}
                       >
                         <div>
-                          <span className="text-xs font-bold text-white block">{acc.name}</span>
-                          <span className="text-[10px] text-zinc-400">{acc.category} • {acc.description}</span>
+                          <span className="text-white block font-bold">{acc.name}</span>
+                          <span className="text-[10px] text-zinc-500 uppercase">{acc.category}</span>
                         </div>
-                        <span className="text-xs font-bold text-amber-400 flex-shrink-0 ml-3">
-                          +{CurrencyFormatter.formatINR(acc.price)}
-                        </span>
+                        <span className="text-[#0055ff] font-bold">+{CurrencyFormatter.formatINR(acc.price)}</span>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Live Quotation Summary Breakdown Card */}
-                <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2 text-xs">
-                  <h4 className="font-bold text-white uppercase tracking-wider text-[11px] pb-1 border-b border-zinc-800">
-                    Live Quotation Breakdown
-                  </h4>
-                  <div className="flex justify-between text-zinc-400">
-                    <span>Base Vehicle ({selectedVehicle.name})</span>
-                    <span className="text-white font-semibold">{CurrencyFormatter.formatINR(pricing.basePrice)}</span>
+                {/* Technical Price Breakdown Table */}
+                <div className="p-5 bg-[#090a0c] hairline-border space-y-2 font-mono text-xs">
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-meta pb-2 border-b border-white/5">
+                    TECHNICAL PRICE COMPUTATION
                   </div>
-                  {pricing.variantPrice > 0 && (
-                    <div className="flex justify-between text-zinc-400">
-                      <span>Trim Variant ({selectedVariant.name})</span>
-                      <span className="text-white font-semibold">+{CurrencyFormatter.formatINR(pricing.variantPrice)}</span>
-                    </div>
-                  )}
+                  <div className="flex justify-between text-zinc-400">
+                    <span>BASE VEHICLE</span>
+                    <span className="text-white">{CurrencyFormatter.formatINR(pricing.basePrice)}</span>
+                  </div>
                   {pricing.colorPrice > 0 && (
                     <div className="flex justify-between text-zinc-400">
-                      <span>Exterior Paint ({selectedColor.name})</span>
-                      <span className="text-white font-semibold">+{CurrencyFormatter.formatINR(pricing.colorPrice)}</span>
-                    </div>
-                  )}
-                  {pricing.interiorPrice > 0 && (
-                    <div className="flex justify-between text-zinc-400">
-                      <span>Interior Atelier</span>
-                      <span className="text-white font-semibold">+{CurrencyFormatter.formatINR(pricing.interiorPrice)}</span>
-                    </div>
-                  )}
-                  {pricing.wheelPrice > 0 && (
-                    <div className="flex justify-between text-zinc-400">
-                      <span>Wheels</span>
-                      <span className="text-white font-semibold">+{CurrencyFormatter.formatINR(pricing.wheelPrice)}</span>
+                      <span>PREMIUM COLOUR</span>
+                      <span className="text-white">+{CurrencyFormatter.formatINR(pricing.colorPrice)}</span>
                     </div>
                   )}
                   {pricing.packagesPrice > 0 && (
                     <div className="flex justify-between text-zinc-400">
-                      <span>Tech Packages ({selectedPackageIds.length})</span>
-                      <span className="text-white font-semibold">+{CurrencyFormatter.formatINR(pricing.packagesPrice)}</span>
+                      <span>TECHNOLOGY PACKAGE</span>
+                      <span className="text-white">+{CurrencyFormatter.formatINR(pricing.packagesPrice)}</span>
                     </div>
                   )}
                   {pricing.accessoriesPrice > 0 && (
                     <div className="flex justify-between text-zinc-400">
-                      <span>Accessories ({selectedAccessoryIds.length})</span>
-                      <span className="text-white font-semibold">+{CurrencyFormatter.formatINR(pricing.accessoriesPrice)}</span>
+                      <span>ACCESSORIES</span>
+                      <span className="text-white">+{CurrencyFormatter.formatINR(pricing.accessoriesPrice)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-emerald-400 font-semibold pt-1">
-                    <span>Privilege Promotional Discount (2%)</span>
-                    <span>-{CurrencyFormatter.formatINR(pricing.applicableDiscount)}</span>
+                  <div className="flex justify-between text-zinc-400 pt-2 border-t border-white/5">
+                    <span>DISCOUNT APPLIED</span>
+                    <span className="text-zinc-300">-{CurrencyFormatter.formatINR(pricing.applicableDiscount)}</span>
                   </div>
-                  <div className="flex justify-between text-zinc-400">
-                    <span>Estimated GST & Luxury Cess (18%)</span>
-                    <span>+{CurrencyFormatter.formatINR(pricing.estimatedTaxesGst)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm font-extrabold text-amber-400 pt-2 border-t border-zinc-800">
-                    <span>Estimated Total</span>
+                  <div className="flex justify-between text-sm font-bold text-[#0055ff] pt-2 border-t border-white/10">
+                    <span>ESTIMATED TOTAL</span>
                     <span>{CurrencyFormatter.formatINR(pricing.estimatedTotal)}</span>
                   </div>
                 </div>
 
-                <p className="text-[10px] text-zinc-400 leading-relaxed italic">
-                  *Estimated price — final price may vary based on taxes, location, dealer charges and applicable offers.
-                </p>
-
-                {/* Customer Details Form */}
-                <form onSubmit={handleGenerateQuotation} className="space-y-3 pt-2">
-                  <h4 className="font-bold text-white text-xs uppercase tracking-wider">
-                    Enter Contact Details for Official PDF Quotation
-                  </h4>
+                {/* Customer Contact Form */}
+                <form onSubmit={handleGenerateQuotation} className="space-y-3 font-mono text-xs">
                   <div className="grid grid-cols-2 gap-3">
                     <input
                       type="text"
                       required
-                      placeholder="Full Name *"
+                      placeholder="NAME *"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      className="px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                      className="px-3 py-2.5 bg-[#090a0c] hairline-border text-white placeholder-zinc-600 focus:outline-none focus:border-[#0055ff]"
                     />
                     <input
                       type="tel"
                       required
-                      placeholder="Mobile Number *"
+                      placeholder="PHONE *"
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                      className="px-3 py-2.5 bg-[#090a0c] hairline-border text-white placeholder-zinc-600 focus:outline-none focus:border-[#0055ff]"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <input
                       type="email"
                       required
-                      placeholder="Corporate / Personal Email *"
+                      placeholder="EMAIL *"
                       value={customerEmail}
                       onChange={(e) => setCustomerEmail(e.target.value)}
-                      className="px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                      className="px-3 py-2.5 bg-[#090a0c] hairline-border text-white placeholder-zinc-600 focus:outline-none focus:border-[#0055ff]"
                     />
                     <select
                       value={customerCity}
                       onChange={(e) => setCustomerCity(e.target.value)}
-                      className="px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-300 focus:outline-none focus:border-amber-400"
+                      className="px-3 py-2.5 bg-[#090a0c] hairline-border text-white focus:outline-none focus:border-[#0055ff]"
                     >
                       <option value="Mumbai">Mumbai</option>
                       <option value="Delhi NCR">Delhi NCR</option>
                       <option value="Bengaluru">Bengaluru</option>
                       <option value="Hyderabad">Hyderabad</option>
                       <option value="Chennai">Chennai</option>
-                      <option value="Pune">Pune</option>
-                      <option value="Kolkata">Kolkata</option>
                     </select>
                   </div>
 
-                  <div className="flex items-center gap-3 pt-3">
-                    <button
-                      type="button"
-                      onClick={() => setCurrentStep(6)}
-                      className="py-3 px-4 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-wider"
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmittingQuote}
-                      className="flex-1 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 text-black font-extrabold text-xs uppercase tracking-wider shadow-glow flex items-center justify-center gap-2 hover:opacity-95"
-                    >
-                      <FileText className="w-4 h-4" />
-                      <span>{isSubmittingQuote ? 'Generating...' : 'Generate Official Quotation'}</span>
-                    </button>
-                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingQuote}
+                    className="w-full py-4 rounded-full font-mono text-xs uppercase tracking-technical font-bold bg-[#0055ff] text-white hover:bg-[#0047d6] transition-colors mt-2"
+                  >
+                    {isSubmittingQuote ? 'GENERATING QUOTATION...' : '08 — GENERATE QUOTATION'}
+                  </button>
                 </form>
               </div>
             )}
 
-            {/* Step 8: Formal Quotation Ready */}
+            {/* 08 — SUMMARY & OFFICIAL QUOTATION */}
             {currentStep === 8 && issuedQuotation && (
-              <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-amber-400/40 shadow-glow space-y-6">
-                
-                {/* Official Quotation Document Preview Header */}
-                <div className="flex items-start justify-between border-b border-zinc-800 pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5">
-                      <div className="w-full h-full bg-zinc-950 rounded-[10px] flex items-center justify-center font-display font-black text-amber-400 text-lg">
-                        A
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="font-display text-lg font-black text-white">AUTOBOT AUTOMOTIVE</h4>
-                      <p className="text-[10px] text-zinc-400 uppercase tracking-widest">Official Vehicle Estimate</p>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <span className="text-[10px] uppercase tracking-wider text-zinc-400 block">Quotation No.</span>
-                    <span className="font-mono text-xs font-bold text-amber-400">{issuedQuotation.quotationNumber}</span>
-                  </div>
+              <div className="space-y-6 font-mono text-xs">
+                <div className="pb-4 border-b border-white/10 flex justify-between items-baseline">
+                  <span className="text-xs uppercase tracking-meta text-[#0055ff]">08 / OFFICIAL QUOTATION DOSSIER</span>
+                  <span className="text-white font-bold">{issuedQuotation.quotationNumber}</span>
                 </div>
 
-                {/* Client & Vehicle Details */}
-                <div className="grid grid-cols-2 gap-4 text-xs bg-zinc-900/60 p-4 rounded-xl border border-zinc-800/80">
-                  <div>
-                    <span className="text-[10px] uppercase text-zinc-500 block">Prepared For</span>
-                    <strong className="text-white block">{customerName}</strong>
-                    <span className="text-zinc-400 block">{customerEmail}</span>
-                    <span className="text-zinc-400 block">{customerPhone} • {customerCity}</span>
+                <div className="p-6 bg-[#090a0c] hairline-border space-y-4">
+                  <div className="border-b border-white/5 pb-3">
+                    <span className="text-zinc-500 uppercase text-[10px] block">CLIENT IDENTIFIER</span>
+                    <strong className="text-white text-sm block">{customerName}</strong>
+                    <span className="text-zinc-400">{customerEmail} • {customerPhone} • {customerCity}</span>
                   </div>
-                  <div>
-                    <span className="text-[10px] uppercase text-zinc-500 block">Configured Spec</span>
-                    <strong className="text-amber-400 block">{selectedVehicle.name}</strong>
-                    <span className="text-zinc-300 block">{selectedVariant.name}</span>
-                    <span className="text-zinc-400 block">{selectedColor.name} ({selectedColor.exteriorFinish || 'Metallic'})</span>
-                  </div>
-                </div>
 
-                {/* Final Cost Summary */}
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between text-zinc-300">
-                    <span>Base Vehicle & Selected Options Subtotal</span>
-                    <span>{CurrencyFormatter.formatINR(pricing.basePrice + pricing.variantPrice + pricing.colorPrice + pricing.interiorPrice + pricing.wheelPrice + pricing.packagesPrice + pricing.accessoriesPrice)}</span>
+                  <div className="border-b border-white/5 pb-3 space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-zinc-500">SPECIFICATION:</span>
+                      <span className="text-white font-bold">{selectedVehicle.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-500">TRIM VARIANT:</span>
+                      <span className="text-white">{selectedVariant.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-500">EXTERIOR PAINT:</span>
+                      <span className="text-white">{selectedColor.name}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-emerald-400 font-semibold">
-                    <span>Special Privilege Discount</span>
-                    <span>-{CurrencyFormatter.formatINR(pricing.applicableDiscount)}</span>
-                  </div>
-                  <div className="flex justify-between text-zinc-300">
-                    <span>Estimated GST (18%)</span>
-                    <span>+{CurrencyFormatter.formatINR(pricing.estimatedTaxesGst)}</span>
-                  </div>
-                  <div className="flex justify-between text-base font-black text-amber-400 pt-2 border-t border-zinc-800">
-                    <span>Estimated On-Road Total</span>
+
+                  <div className="flex justify-between text-base font-bold text-[#0055ff] pt-2">
+                    <span>ESTIMATED ON-ROAD:</span>
                     <span>{CurrencyFormatter.formatINR(pricing.estimatedTotal)}</span>
                   </div>
                 </div>
 
-                {/* Actions: Download PDF, Book Drive, Configure another */}
-                <div className="space-y-3 pt-2">
+                {/* Action Buttons: DOWNLOAD PDF & EMAIL QUOTATION */}
+                <div className="space-y-3">
                   <button
-                    onClick={handlePrintOrPdf}
-                    className="w-full py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-glow transition-all"
+                    onClick={handleDownloadPdf}
+                    className="w-full py-3.5 rounded-full font-mono text-xs uppercase tracking-technical font-bold bg-white text-black hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
                   >
                     <Download className="w-4 h-4" />
-                    <span>Download / Print Quotation PDF</span>
+                    <span>DOWNLOAD PDF</span>
                   </button>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <Link
-                      to={`/test-drive?model=${selectedVehicle.slug}`}
-                      className="py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white text-xs font-bold uppercase tracking-wider text-center transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Book Test Drive</span>
-                    </Link>
-
-                    <button
-                      onClick={() => setCurrentStep(1)}
-                      className="py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold uppercase tracking-wider text-center transition-colors"
-                    >
-                      New Configuration
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setEmailSent(true)}
+                    className="w-full py-3.5 rounded-full font-mono text-xs uppercase tracking-technical font-bold bg-[#0055ff] text-white hover:bg-[#0047d6] transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <span>{emailSent ? 'QUOTATION TRANSMITTED TO EMAIL' : 'EMAIL QUOTATION'}</span>
+                  </button>
                 </div>
 
-                <p className="text-[10px] text-zinc-500 text-center leading-relaxed">
-                  Quotation valid for 14 calendar days from date of issue. Non-contractual estimate.
-                </p>
-
+                <div className="pt-2 text-center">
+                  <button
+                    onClick={() => setCurrentStep(1)}
+                    className="text-zinc-500 hover:text-white uppercase tracking-meta text-[10px]"
+                  >
+                    [START NEW CONFIGURATION]
+                  </button>
+                </div>
               </div>
             )}
 

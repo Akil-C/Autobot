@@ -8,31 +8,36 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        autobot: {
-          dark: "#090a0f",
-          card: "#12141c",
-          elevated: "#181a24",
-          border: "#262938",
-          accent: "#f59e0b",
-          accentHover: "#d97706",
-          gold: "#eab308",
-          silver: "#94a3b8",
-          platinum: "#e2e8f0",
-          cyan: "#06b6d4"
+        signal: {
+          DEFAULT: '#0055ff',
+          hover: '#0047d6',
+          muted: 'rgba(0, 85, 255, 0.15)',
+          glow: 'rgba(0, 85, 255, 0.4)',
+        },
+        technical: {
+          950: '#090a0c',
+          900: '#0f1014',
+          850: '#14161b',
+          800: '#1a1d24',
+          700: '#282c37',
+          500: '#64748b',
+          400: '#94a3b8',
+          100: '#f4f4f6',
         }
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Archivo"', '"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
-      backgroundImage: {
-        'radial-gradient': 'radial-gradient(circle at center, var(--tw-gradient-stops))',
-        'metallic-shine': 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.05) 100%)',
+      letterSpacing: {
+        'tightest': '-0.04em',
+        'poster': '-0.06em',
+        'technical': '0.12em',
+        'meta': '0.18em',
       },
-      boxShadow: {
-        'glow': '0 0 35px -5px rgba(245, 158, 11, 0.3)',
-        'cyan-glow': '0 0 35px -5px rgba(6, 182, 212, 0.3)',
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+      borderWidth: {
+        'hairline': '1px',
       }
     },
   },

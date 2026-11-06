@@ -1,16 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  RotateCw, 
-  Sun, 
-  Moon, 
-  Sparkles, 
-  Volume2, 
-  VolumeX, 
-  Eye, 
-  Maximize2, 
-  Check, 
-  Layers 
-} from 'lucide-react';
+import { Check, Sun, Moon, Layers, Volume2, VolumeX } from 'lucide-react';
 import { Vehicle, VehicleColor } from '../../types/vehicle';
 
 interface InteractiveVehicleViewerProps {
@@ -26,12 +15,10 @@ export const InteractiveVehicleViewer: React.FC<InteractiveVehicleViewerProps> =
   onColorChange,
   className = ''
 }) => {
-  const [viewAngle, setViewAngle] = useState<'front' | 'side' | 'rear'>('front');
   const [lightsActive, setLightsActive] = useState<boolean>(true);
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [spoilerDeployed, setSpoilerDeployed] = useState<boolean>(false);
 
-  // Play synthetic automotive throttle acoustic sound using Web Audio API!
   const toggleEngineAudio = () => {
     if (isPlayingAudio) {
       setIsPlayingAudio(false);
@@ -45,113 +32,84 @@ export const InteractiveVehicleViewer: React.FC<InteractiveVehicleViewerProps> =
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       
-      // Electric hyper-turbine drone frequency ramp
       osc.type = vehicle.fuelType === 'Pure Electric' ? 'sine' : 'sawtooth';
-      osc.frequency.setValueAtTime(65, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 1.8);
-      osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 3.2);
+      osc.frequency.setValueAtTime(70, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(340, ctx.currentTime + 1.6);
+      osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 3.0);
 
       gain.gain.setValueAtTime(0.01, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.3);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 3.5);
+      gain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 3.2);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 3.6);
+      osc.stop(ctx.currentTime + 3.3);
 
       setIsPlayingAudio(true);
-      setTimeout(() => setIsPlayingAudio(false), 3600);
+      setTimeout(() => setIsPlayingAudio(false), 3300);
     } catch (e) {
       console.warn('Audio not allowed', e);
     }
   };
 
   return (
-    <div className={`relative rounded-3xl overflow-hidden bg-gradient-to-b from-zinc-900 via-zinc-950 to-black border border-zinc-800 shadow-2xl flex flex-col ${className}`}>
+    <div className={`bg-[#0f1014] hairline-border relative flex flex-col ${className}`}>
       
       {/* Studio Header Bar */}
-      <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
-        <div className="pointer-events-auto flex items-center gap-2 bg-zinc-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-zinc-800 text-xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-          <span className="font-semibold text-zinc-300">Live 3D Studio</span>
-          <span className="text-zinc-600">|</span>
-          <span className="text-amber-400 font-bold">{selectedColor.name}</span>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 font-mono text-xs">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#0055ff]" />
+          <span className="text-zinc-400 uppercase tracking-meta">ATELIER STUDIO // 3D VIEW</span>
         </div>
 
-        {/* View Angles Selector */}
-        <div className="pointer-events-auto flex items-center gap-1 bg-zinc-950/80 backdrop-blur-md p-1 rounded-full border border-zinc-800 text-xs">
-          {(['front', 'side', 'rear'] as const).map((angle) => (
-            <button
-              key={angle}
-              onClick={() => setViewAngle(angle)}
-              className={`px-3 py-1 rounded-full capitalize font-semibold transition-all ${
-                viewAngle === angle 
-                  ? 'bg-amber-400 text-black shadow-glow' 
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              {angle}
-            </button>
-          ))}
+        <div className="text-zinc-500 uppercase tracking-meta hidden sm:block">
+          FINISH: <strong className="text-white">{selectedColor.name}</strong>
         </div>
       </div>
 
-      {/* Main Visualizer Stage */}
-      <div className="relative w-full aspect-[16/9] min-h-[360px] md:min-h-[480px] flex items-center justify-center p-6 overflow-hidden">
+      {/* Main Vehicle Canvas Area (No Card) */}
+      <div className="relative w-full aspect-[16/9] min-h-[340px] md:min-h-[460px] flex items-center justify-center p-8 overflow-hidden">
         
-        {/* Studio Floor Radial Light Grid */}
+        {/* Subtle Ground Shadow & Radial Glow */}
         <div 
-          className="absolute inset-0 opacity-40 transition-colors duration-500"
+          className="absolute inset-0 opacity-20 pointer-events-none transition-colors duration-500"
           style={{
-            background: `radial-gradient(circle at 50% 60%, ${selectedColor.hex}33 0%, rgba(9,10,15,0.8) 55%, #090a0f 100%)`
+            background: `radial-gradient(circle at 50% 60%, ${selectedColor.hex}33 0%, transparent 60%)`
           }}
         />
 
-        {/* Studio Floor Perspective Ellipse Shadow */}
-        <div 
-          className="absolute bottom-10 w-[75%] h-16 rounded-[100%] blur-xl opacity-80"
-          style={{ background: '#000000' }}
-        />
-
-        {/* Interactive Car Canvas & Image Representation */}
-        <div className="relative z-10 w-full max-w-4xl transition-all duration-700 ease-out transform">
-          
+        {/* Photorealistic Vehicle Display */}
+        <div className="relative z-10 w-full max-w-3xl transition-all duration-500">
           <img
             src={selectedColor.imageUrl || vehicle.heroImage}
             alt={`${vehicle.name} in ${selectedColor.name}`}
-            className="w-full h-auto object-contain max-h-[440px] drop-shadow-[0_25px_35px_rgba(0,0,0,0.9)] transition-all duration-700"
+            className="w-full h-auto object-contain max-h-[400px] drop-shadow-[0_20px_35px_rgba(0,0,0,0.9)]"
           />
 
-          {/* Dynamic Color Hue Reflection Tint Overlay */}
+          {/* Color Reflection Layer */}
           <div 
-            className="absolute inset-0 mix-blend-color opacity-30 pointer-events-none rounded-2xl transition-all duration-700"
+            className="absolute inset-0 mix-blend-color opacity-25 pointer-events-none transition-all duration-500"
             style={{ backgroundColor: selectedColor.hex }}
           />
 
-          {/* Headlights Neon Beams effect when active */}
-          {lightsActive && (
-            <div className="absolute top-[38%] left-[2%] w-32 h-16 bg-cyan-400/20 blur-2xl rounded-full pointer-events-none animate-pulse-glow" />
-          )}
-
-          {/* Active Aero Spoiler indicator */}
+          {/* Active Aero Pill */}
           {spoilerDeployed && (
-            <div className="absolute -top-3 right-[15%] px-2.5 py-0.5 rounded-full text-[10px] bg-amber-400 text-black font-extrabold uppercase tracking-widest shadow-glow animate-bounce">
-              Aero Active: +140kg Downforce
+            <div className="absolute top-2 right-4 font-mono text-[10px] bg-[#0055ff] text-white px-2.5 py-1 tracking-meta uppercase">
+              ACTIVE AERO: +140KG DOWNFORCE
             </div>
           )}
         </div>
 
       </div>
 
-      {/* Interactive Controls Toolbar & Color Switcher */}
-      <div className="p-5 bg-zinc-950/90 border-t border-zinc-800/80 z-20 flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* Technical Toolbar & Circular Colour Selectors */}
+      <div className="p-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6 font-mono text-xs">
         
-        {/* Exterior Colors Palette */}
+        {/* Exterior Circular/Pill Color Selectors */}
         <div className="flex items-center gap-3">
-          <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            Finish:
+          <span className="text-zinc-500 uppercase tracking-meta text-[11px]">
+            COLOUR:
           </span>
           <div className="flex items-center gap-2">
             {vehicle.colors.map((color) => {
@@ -160,17 +118,19 @@ export const InteractiveVehicleViewer: React.FC<InteractiveVehicleViewerProps> =
                 <button
                   key={color.id}
                   onClick={() => onColorChange && onColorChange(color)}
-                  className={`group relative w-8 h-8 rounded-full p-0.5 transition-all duration-200 ${
-                    isSelected ? 'ring-2 ring-amber-400 scale-110' : 'hover:scale-105 opacity-80 hover:opacity-100'
+                  className={`w-7 h-7 rounded-full p-0.5 transition-all ${
+                    isSelected 
+                      ? 'ring-2 ring-[#0055ff] scale-110' 
+                      : 'opacity-70 hover:opacity-100 hover:scale-105'
                   }`}
-                  title={`${color.name} (${color.price === 0 ? 'Standard' : `+₹${color.price.toLocaleString('en-IN')}`})`}
+                  title={`${color.name} (${color.price === 0 ? 'Included' : `+₹${color.price.toLocaleString('en-IN')}`})`}
                 >
                   <div
-                    className="w-full h-full rounded-full border border-white/20 shadow-inner flex items-center justify-center"
+                    className="w-full h-full rounded-full border border-white/20 flex items-center justify-center"
                     style={{ backgroundColor: color.hex }}
                   >
                     {isSelected && (
-                      <Check className={`w-3.5 h-3.5 ${color.hex === '#f8fafc' || color.hex === '#ffffff' ? 'text-black' : 'text-white'}`} />
+                      <Check className={`w-3 h-3 ${color.hex === '#f8fafc' || color.hex === '#ffffff' ? 'text-black' : 'text-white'}`} />
                     )}
                   </div>
                 </button>
@@ -179,45 +139,39 @@ export const InteractiveVehicleViewer: React.FC<InteractiveVehicleViewerProps> =
           </div>
         </div>
 
-        {/* Feature Toggles (Sound, Lights, Aero) */}
+        {/* Feature Toggles */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setLightsActive(!lightsActive)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
-              lightsActive 
-                ? 'bg-amber-400/15 border-amber-400/40 text-amber-400' 
-                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-full font-mono text-[11px] uppercase tracking-technical border transition-all ${
+              lightsActive
+                ? 'border-[#0055ff] text-[#0055ff] bg-[#0055ff]/10'
+                : 'border-white/10 text-zinc-500 hover:text-white'
             }`}
-            title="Toggle Matrix Laser Headlights"
           >
-            {lightsActive ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5" />}
-            <span>Matrix Lights</span>
+            LIGHTS {lightsActive ? '[ON]' : '[OFF]'}
           </button>
 
           <button
             onClick={() => setSpoilerDeployed(!spoilerDeployed)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
-              spoilerDeployed 
-                ? 'bg-amber-400/15 border-amber-400/40 text-amber-400' 
-                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-full font-mono text-[11px] uppercase tracking-technical border transition-all ${
+              spoilerDeployed
+                ? 'border-[#0055ff] text-[#0055ff] bg-[#0055ff]/10'
+                : 'border-white/10 text-zinc-500 hover:text-white'
             }`}
-            title="Deploy Active Variable Rear Wing"
           >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Active Aero</span>
+            AERO {spoilerDeployed ? '[ACTIVE]' : '[RETRACTED]'}
           </button>
 
           <button
             onClick={toggleEngineAudio}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
-              isPlayingAudio 
-                ? 'bg-amber-400 text-black font-bold animate-pulse' 
-                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-full font-mono text-[11px] uppercase tracking-technical border transition-all ${
+              isPlayingAudio
+                ? 'border-[#0055ff] text-white bg-[#0055ff]'
+                : 'border-white/10 text-zinc-500 hover:text-white'
             }`}
-            title="Synthesize Powertrain Acoustic Tone"
           >
-            {isPlayingAudio ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-            <span>{isPlayingAudio ? 'Accelerating...' : 'Engine Note'}</span>
+            {isPlayingAudio ? 'ACOUSTIC [ON]' : 'AUDIO NOTE'}
           </button>
         </div>
 
