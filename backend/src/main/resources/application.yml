@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: automotor-backend
+
+server:
+  port: 8080
+
+# Datasource configuration – replace placeholders with real values in .env or environment variables
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/automotor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+# Flyway migrations location
+flyway:
+  locations: classpath:db/migration
+
+# JWT configuration – set secrets via env vars
+jwt:
+  secret: ${JWT_SECRET:change_me_to_a_secure_secret}
+  expirationMs: 3600000   # 1 hour
+  refreshExpirationMs: 86400000  # 24 hours
+
+# CORS – allow frontend origin (adjust for prod)
+cors:
+  allowed-origins: "http://localhost:5173"
+  allowed-methods: "*"
+  allowed-headers: "*"
+  allow-credentials: true
